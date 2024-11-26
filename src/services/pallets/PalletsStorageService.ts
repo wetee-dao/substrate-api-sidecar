@@ -106,12 +106,12 @@ export class PalletsStorageService extends AbstractPalletsService {
 		]);
 
 
-		let res:any = []
+		let values:any = []
 		value.forEach(([key, exposure]) => {
 			const k = key.toHuman()
-			res.push({
+			values.push({
 				keys: k,
-				value: exposure
+				value: exposure.toHuman()
 			})
 		});
 
@@ -124,7 +124,7 @@ export class PalletsStorageService extends AbstractPalletsService {
 			palletIndex: palletMetaIdx,
 			storageItem: storageItemId,
 			keys,
-			res,
+			values,
 			metadata: normalizedStorageItemMeta,
 		};
 	}
