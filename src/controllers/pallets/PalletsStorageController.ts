@@ -45,6 +45,7 @@ export default class PalletsStorageController extends AbstractController<Pallets
 	protected initRoutes(): void {
 		this.safeMountAsyncGetHandlers([
 			['/:storageItemId', this.getStorageItem as RequestHandler],
+			['/entries/:storageItemId', this.getStorageEntries as RequestHandler],
 			['/', this.getStorage],
 		]);
 	}
@@ -62,6 +63,29 @@ export default class PalletsStorageController extends AbstractController<Pallets
 		PalletsStorageController.sanitizedSend(
 			res,
 			await this.service.fetchStorageItem(historicApi, {
+				hash,
+				// stringCamelCase ensures we don't have snake case or kebab case
+				palletId: stringCamelCase(palletId),
+				storageItemId: stringCamelCase(storageItemId),
+				keys: parsedKeys,
+				metadata: metadataArg,
+			}),
+		);
+	};
+
+	private getStorageEntries: RequestHandler<IPalletsStorageParam, unknown, unknown, IPalletsStorageQueryParam> = async (
+		{ query: { at, keys, metadata }, params: { palletId, storageItemId } },
+		res,
+	): Promise<void> => {
+		const parsedKeys = Array.isArray(keys) ? keys : [];
+		const metadataArg = metadata === 'true';
+
+		const hash = await this.getHashFromAt(at);
+		const historicApi = await this.api.at(hash);
+
+		PalletsStorageController.sanitizedSend(
+			res,
+			await this.service.entriesStorage(historicApi, {
 				hash,
 				// stringCamelCase ensures we don't have snake case or kebab case
 				palletId: stringCamelCase(palletId),
