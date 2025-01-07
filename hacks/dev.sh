@@ -11,6 +11,6 @@ DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
 
 cd "$DIR/../"
 
-export SAS_SUBSTRATE_URL="wss://xiaobai.asyou.me:30001/ws"
+export SAS_SUBSTRATE_URL="wss://xiaobai.asyou.me:30011/ws"
 yarn build
 yarn start

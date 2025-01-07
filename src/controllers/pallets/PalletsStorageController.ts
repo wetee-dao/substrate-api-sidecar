@@ -58,8 +58,11 @@ export default class PalletsStorageController extends AbstractController<Pallets
 		const metadataArg = metadata === 'true';
 
 		const hash = await this.getHashFromAt(at);
-		const historicApi = await this.api.at(hash);
-
+		let historicApi:any = this.api;
+		if (typeof at === 'string'){
+			historicApi = await this.api.at(hash);
+		}
+		
 		PalletsStorageController.sanitizedSend(
 			res,
 			await this.service.fetchStorageItem(historicApi, {
@@ -81,7 +84,10 @@ export default class PalletsStorageController extends AbstractController<Pallets
 		const metadataArg = metadata === 'true';
 
 		const hash = await this.getHashFromAt(at);
-		const historicApi = await this.api.at(hash);
+		let historicApi:any = this.api;
+		if (typeof at === 'string'){
+			historicApi = await this.api.at(hash);
+		}
 
 		PalletsStorageController.sanitizedSend(
 			res,
