@@ -46,6 +46,8 @@ export default class PalletsStorageController extends AbstractController<Pallets
 		this.safeMountAsyncGetHandlers([
 			['/:storageItemId', this.getStorageItem as RequestHandler],
 			['/entries/:storageItemId', this.getStorageEntries as RequestHandler],
+			['/from_keys/:storageItemId', this.getStorageKeys as RequestHandler],
+			['/multi_query/:storageItemId', this.multiQuery as RequestHandler],
 			['/', this.getStorage],
 		]);
 	}
@@ -101,6 +103,58 @@ export default class PalletsStorageController extends AbstractController<Pallets
 			}),
 		);
 	};
+
+	private getStorageKeys: RequestHandler<IPalletsStorageParam, unknown, unknown, IPalletsStorageQueryParam> = async (
+		{ query: { at, keys, metadata }, params: { palletId, storageItemId } },
+		res,
+	): Promise<void> => {
+		const parsedKeys = Array.isArray(keys) ? keys : [];
+		const metadataArg = metadata === 'true';
+
+		const hash = await this.getHashFromAt(at);
+		let historicApi:any = this.api;
+		if (typeof at === 'string'){
+			historicApi = await this.api.at(hash);
+		}
+
+		PalletsStorageController.sanitizedSend(
+			res,
+			await this.service.keyStorage(historicApi, {
+				hash,
+				// stringCamelCase ensures we don't have snake case or kebab case
+				palletId: stringCamelCase(palletId),
+				storageItemId: stringCamelCase(storageItemId),
+				keys: parsedKeys,
+				metadata: metadataArg,
+			}),
+		);
+	};
+
+	private multiQuery: RequestHandler<IPalletsStorageParam, unknown, unknown, IPalletsStorageQueryParam> = async (
+		{ query: { at, keys, metadata }, params: { palletId, storageItemId } },
+		res,
+	): Promise<void> => {
+		const parsedKeys = Array.isArray(keys) ? keys : [];
+		const metadataArg = metadata === 'true';
+
+		const hash = await this.getHashFromAt(at);
+		let historicApi:any = this.api;
+		if (typeof at === 'string'){
+			historicApi = await this.api.at(hash);
+		}
+		
+		PalletsStorageController.sanitizedSend(
+			res,
+			await this.service.multiStorageQuery(historicApi, {
+				hash,
+				// stringCamelCase ensures we don't have snake case or kebab case
+				palletId: stringCamelCase(palletId),
+				storageItemId: stringCamelCase(storageItemId),
+				keys: parsedKeys,
+				metadata: metadataArg,
+			}),
+		);
+	};	
 
 	private getStorage: RequestHandler = async ({ params: { palletId }, query: { at, onlyIds } }, res): Promise<void> => {
 		const onlyIdsArg = onlyIds === 'true';

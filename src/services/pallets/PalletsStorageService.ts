@@ -77,6 +77,66 @@ export class PalletsStorageService extends AbstractPalletsService {
 		};
 	}
 
+	async multiStorageQuery(
+		historicApi: ApiDecoration<'promise'>,
+		{ hash, palletId, storageItemId, keys, metadata }: IFetchStorageItemArgs,
+	): Promise<any> {
+		const metadataFieldType = 'storage';
+		const chosenMetadata = historicApi.registry.metadata;
+		const [palletMeta, palletMetaIdx] = this.findPalletMeta(chosenMetadata, palletId, metadataFieldType);
+		const palletName = stringCamelCase(palletMeta.name);
+
+		// Even if `storageItemMeta` is not used, we call this function to ensure it exists. The side effects
+		// of the storage item not existing are that `getStorageItemMeta` will throw.
+		const storageItemMeta = this.findPalletFieldItemMeta(
+			historicApi,
+			palletMeta,
+			storageItemId,
+			metadataFieldType,
+		) as StorageEntryMetadataV14;
+
+		let normalizedStorageItemMeta: ISanitizedStorageItemMetadata | undefined;
+		if (metadata) {
+			normalizedStorageItemMeta = this.normalizeStorageItemMeta(storageItemMeta);
+		}
+
+		let ps: any[] = []
+		if (keys.length == 1) {
+			let ks = keys[0];
+			ps = [JSON.parse(decodeURIComponent(ks))];
+		} else if (keys.length == 2) {
+			let ks = keys[1];
+			ps = [keys[0], JSON.parse(decodeURIComponent(ks))];
+		}
+
+		console.log(ps)
+		const [value, { number }] = await Promise.all([
+			//@ts-ignore
+			historicApi.query[palletName][storageItemId].multi(...ps),
+			this.api.rpc.chain.getHeader(hash),
+		]);
+
+		let values: any = []
+		value.forEach((exposure) => {
+			console.log(exposure.toHuman())
+			values.push(exposure.toHuman())
+		});
+
+
+		return {
+			at: {
+				hash: hash,
+				height: number.unwrap().toString(10),
+			},
+			pallet: palletName,
+			palletIndex: palletMetaIdx,
+			storageItem: storageItemId,
+			keys,
+			values,
+			metadata: normalizedStorageItemMeta,
+		};
+	}
+
 	async entriesStorage(
 		historicApi: ApiDecoration<'promise'>,
 		{ hash, palletId, storageItemId, keys, metadata }: IFetchStorageItemArgs,
@@ -106,13 +166,62 @@ export class PalletsStorageService extends AbstractPalletsService {
 		]);
 
 
-		let values:any = []
+		let values: any = []
 		value.forEach(([key, exposure]) => {
 			const k = key.toHuman()
 			values.push({
 				keys: k,
 				value: exposure.toHuman()
 			})
+		});
+
+		return {
+			at: {
+				hash: hash,
+				height: number.unwrap().toString(10),
+			},
+			pallet: palletName,
+			palletIndex: palletMetaIdx,
+			storageItem: storageItemId,
+			keys,
+			values,
+			metadata: normalizedStorageItemMeta,
+		};
+	}
+
+	async keyStorage(
+		historicApi: ApiDecoration<'promise'>,
+		{ hash, palletId, storageItemId, keys, metadata }: IFetchStorageItemArgs,
+	): Promise<any> {
+		const metadataFieldType = 'storage';
+		const chosenMetadata = historicApi.registry.metadata;
+		const [palletMeta, palletMetaIdx] = this.findPalletMeta(chosenMetadata, palletId, metadataFieldType);
+		const palletName = stringCamelCase(palletMeta.name);
+
+		// Even if `storageItemMeta` is not used, we call this function to ensure it exists. The side effects
+		// of the storage item not existing are that `getStorageItemMeta` will throw.
+		const storageItemMeta = this.findPalletFieldItemMeta(
+			historicApi,
+			palletMeta,
+			storageItemId,
+			metadataFieldType,
+		) as StorageEntryMetadataV14;
+
+		let normalizedStorageItemMeta: ISanitizedStorageItemMetadata | undefined;
+		if (metadata) {
+			normalizedStorageItemMeta = this.normalizeStorageItemMeta(storageItemMeta);
+		}
+
+		const [value, { number }] = await Promise.all([
+			historicApi.query[palletName][storageItemId].keys(...keys),
+			this.api.rpc.chain.getHeader(hash),
+		]);
+
+
+		let values: any = []
+		value.forEach((key) => {
+			const k = key.toHuman()
+			values.push(k)
 		});
 
 		return {
