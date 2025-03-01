@@ -118,7 +118,6 @@ export class PalletsStorageService extends AbstractPalletsService {
 
 		let values: any = []
 		value.forEach((exposure) => {
-			console.log(exposure.toHuman())
 			values.push(exposure.toHuman())
 		});
 
